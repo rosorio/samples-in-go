@@ -5,7 +5,7 @@ https://gist.github.com/JalfResi/6287706.
 
 ## Usage
 
-Usage: reverse-proxy [OPTIONS] --remote <REMOTE> --local <LOCAL>
+Usage: reverse-proxy [OPTIONS]
 
     Options:
       -r, --remote <REMOTE>
