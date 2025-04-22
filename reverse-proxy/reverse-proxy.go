@@ -7,34 +7,38 @@ package main
 
 import(
     "flag"
+    "fmt"
     "log"
-    "net/url"
     "net/http"
+    "net/url"
     "net/http/httputil"
 )
 
-
 func main() {
-    var rurl = flag.String("remote", "", "Remote URL")
-    var lbind = flag.String("local", "", "Bind address")
+    rurl := flag.String("remote", "", "Remote URL")
+    lbind := flag.String("local", "", "Bind address")
     flag.Parse()
-
     remote, err := url.Parse(*rurl)
-    if err != nil {
-            panic(err)
-    }
 
-    handler := func(p *httputil.ReverseProxy) func(http.ResponseWriter, *http.Request) {
-        return func(w http.ResponseWriter, r *http.Request) {
-                log.Println(r.URL)
-                r.Host = remote.Host
-                w.Header().Set("X-Ben", "Rad")
-                p.ServeHTTP(w, r)
-            }
+    handler := func(w http.ResponseWriter,r *http.Request) {
+
+        r.Header["X-Forwarded-For"] = nil
+        r.Host = remote.Host
+
+        log.Println("Passing request to remote")
+
+        dump, err := httputil.DumpRequest(r, true)
+        if err == nil {
+            fmt.Printf("Request:\n%q\n", dump)
+        }
+    
+        proxy := httputil.NewSingleHostReverseProxy(remote)
+        proxy.ServeHTTP(w, r)
     }
         
-    proxy := httputil.NewSingleHostReverseProxy(remote)
-    http.HandleFunc("/", handler(proxy))
+    http.HandleFunc("/", handler)
+
+    log.Println("Starting")
     err = http.ListenAndServe(*lbind, nil)
     if err != nil {
         panic(err)
